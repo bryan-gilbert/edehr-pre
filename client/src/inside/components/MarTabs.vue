@@ -44,8 +44,8 @@ import AppDialog from '../../app/components/AppDialogShell'
 import UiButton from '../../app/ui/UiButton'
 import MedList from './mar/MedList'
 import MarRecord from './mar/MarRecord'
+import MarHelper from './mar/mar-util'
 import MarTodayContent from './mar/MarTodayContent'
-import { setApiError } from '../../helpers/ehr-utills'
 import { PAGE_DATA_REFRESH_EVENT } from '../../helpers/event-bus'
 import Tabs from './Tabs'
 import Tab from './Tab'
@@ -70,7 +70,8 @@ export default {
       activePeriod: {},
       periodDefs: {},
       showMarDialog: false,
-      marTableKey: ''
+      marTableKey: '',
+      marHelper: undefined
     }
   },
   props: {
@@ -140,101 +141,22 @@ export default {
     },
 
     refresh () {
-      /*
-      Compose the schedule periods (e.g. breakfast, lunch, etc) based on the data definitions.
-      Reach into the medication orders data. Get the first table. Get the cells of this table.
-      Collect those cells in the schedule fieldset.  WARNING this code is fragile if anyone changes
-      the key of this fieldset.
-      For each cell in the schedule fieldset get the data key and display label.
-      When done we have a list of schedule periods ready to use for any given day of MAR records.
-       */
-      let periodDefs = {}
-      let orderDefs = this.ehrHelp.getPageDefinition('medicationOrders')
-      if (orderDefs && orderDefs.tables && orderDefs.tables.length > 0) {
-        let cells = orderDefs.tables[0].tableCells
-        let medPeriods = cells.filter(cell => cell.fieldset === 'schedule' && cell.inputType === 'checkbox')
-        medPeriods.forEach(mp => {
-          periodDefs[mp.elementKey] = { key: mp.elementKey, name: mp.label, marRecord: {}, hasMar: false }
-        })
+      if (this.marHelper) {
+        let help = this.marHelper
+        this.marTableKey = help.getMarTableKey()
+        this.periodDefs = help.getSchedulePeriods()
+        console.log('refresh end ', this.periodDefs)
+        this.theMedOrders = help.getEhrData_Orders()
+        help.mergeOrdersSchedules(this.periodDefs, this.theMedOrders)
+        this.marRecords = help.getEhrData_Mars()
+        help.mergeMarAndSchedule(this.marRecords, this.periodDefs)
+        console.log('refresh end ', this.periodDefs)
       }
-      this.periodDefs = periodDefs
-      /*
-      Get the current list of medication orders. For each see if they are scheduled for any of the schedule periods,
-      matching on the data key.  If matched then add the medication into the list of meds to be administered
-      in the given schedule period.
-       */
-      let orders = this.ehrHelp.getAsLoadedPageData('medicationOrders')
-      this.theMedOrders = orders
-      let ordersList = orders.table
-      if (ordersList) {
-        ordersList.forEach(medication => {
-          Object.keys(periodDefs).forEach(pk => {
-            let period = periodDefs[pk]
-            let key = period.key
-            if (medication[key]) {
-              period.medsList = period.medsList || []
-              period.medsList.push(medication)
-            }
-          })
-        })
-      }
-      /*
-      Get the MAR records.
-      TODO update the following documentation
-      Each MAR records will have a date and schedule key.  Plus
-        Date
-        ScheduleKey (time)
-        Administered By
-        Actual Time Administered
-        Comment
-        Medications
-
-      On the Today page we will list any MARs that apply. I.e. they are for "today" and for the a schedule time.
-      If there is no MAR for a period of today then we display a button to open a dialog to create the MAR
-      for that period.
-
-      On the summary page we will list all medications
-        medication text (name, dosage, etc)
-        list of MARS for this medication
-          each MAR shows:  scheduled time, actual time, and by who
-
-    Task List
-    1. Add button and dialog to create a MAR
-    2. store MAR under this page's data.  Array of records.
-    */
-      try {
-        let marsPageDef = this.ehrHelp.getPageDefinition(this.pageDataKey)
-        let table = marsPageDef.tables[0]
-        this.marTableKey = table.tableKey
-      } catch (err) {
-        setApiError(err)
-      }
-      /*
-      Search the mar records and see if any apply to the scheduled periods
-      for "today". If there is a mar for a scheduled period then add it
-      to the period itself so we can display the record and not display the
-      add mar button.
-       */
-      let marRecords = this.ehrHelp.getAsLoadedPageData(this.pageDataKey)
-      this.marRecords = marRecords
-      marRecords.table.forEach( record => {
-        // record.period is the schedule 'key'
-        let periodKey = record.period
-        Object.keys(periodDefs).forEach(pk => {
-          let period = periodDefs[pk]
-          let key = period.key
-          if ( key === periodKey ) {
-            period.marRecord = record
-            period.hasMar = true
-          }
-          // todo match up
-        })
-      })
-
     }
   },
   mounted: function () {
     const _this = this
+    this.marHelper = new MarHelper(this.ehrHelp)
     this.refreshEventHandler = function () {
       _this.refresh()
     }
