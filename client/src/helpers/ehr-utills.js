@@ -33,7 +33,7 @@ export function composeAxiosResponseError(error, msg) {
 export function decoupleObject(obj) {
   if (obj) {
     let str = JSON.stringify(obj)
-    console.log('decouple object ', str)
+    // console.log('decouple object ', str)
     return JSON.parse(str)
   }
   return obj
