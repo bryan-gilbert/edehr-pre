@@ -86,6 +86,53 @@ When done we have a list of schedule periods ready to use for any given day of M
       })
     })
   }
+
+  medRecord (med) {
+    let extract = (m, r, k) => {
+      let t = r[k]
+      if(t && t.trim().length > 0) {
+        m[k] = t
+      }
+    }
+    let markup = {}
+    extract(markup, med, 'medication',)
+    extract(markup, med, 'dose',)
+    extract(markup, med, 'type',)
+    extract(markup, med, 'notes',)
+    return markup
+  }
+
+  medText (med) {
+    let space = ', '
+    let extract = t => t && t.trim().length > 0 ? space + t : ''
+    let markup = med.medication
+    markup += extract(med.dose)
+    markup += extract(med.route)
+    markup += extract(med.type)
+    markup += extract(med.notes)
+    return markup
+  }
+
+
+  saveMarDialog(aMar, activePeriod) {
+    const _this = this
+    let marTableKey = this.getMarTableKey()
+    console.log('saveMarDialog ', marTableKey)
+    let asLoadedPageData = this.getEhrData_Mars()
+    let table = asLoadedPageData[marTableKey] || []
+    aMar.medications = []
+    aMar.period = activePeriod.key
+    activePeriod.medsList.forEach( med => {
+      aMar.medications.push(_this.medRecord(med))
+    })
+    table.push(aMar)
+    let payload = {
+      propertyName: MAR_PAGE_KEY,
+      value: asLoadedPageData
+    }
+    return this.ehrHelp._saveData(payload)
+  }
+
 }
 
 

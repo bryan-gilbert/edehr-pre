@@ -1,6 +1,5 @@
 <template lang="pug">
   div
-    h4 MAR Record
     div Who administered: {{ record.who }}
     div Scheduled time: {{ record.period }}
     div Actual time: {{ record.when }}

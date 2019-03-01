@@ -2,7 +2,7 @@
   div(class="content")
     tabs
       tab(name="Today", :selected="true")
-        mar-today-content(:periodDefs="periodDefs")
+        mar-today-content(:periodDefs="periodDefs", :marHelper="marHelper")
 
       tab(name="Summary")
         h1 Medication Administration Summary
@@ -86,31 +86,7 @@ export default {
     },
   },
   methods: {
-    medText (med) {
-      let space = ', '
-      let extract = t => t && t.trim().length > 0 ? space + t : ''
-      let markup = med.medication
-      markup += extract(med.dose)
-      markup += extract(med.route)
-      markup += extract(med.type)
-      markup += extract(med.notes)
-      return markup
-    },
-    medRecord (med) {
-      let space = ', '
-      let extract = (m, r, k) => {
-        let t = r[k]
-        if(t && t.trim().length > 0) {
-          m[k] = t
-        }
-      }
-      let markup = {}
-      extract(markup, med, 'medication',)
-      extract(markup, med, 'dose',)
-      extract(markup, med, 'type',)
-      extract(markup, med, 'notes',)
-      return markup
-    },
+
     openMarDialog(period) {
       this.activePeriod = period
       this.showMarDialog = true
