@@ -1,8 +1,8 @@
 <template lang="pug">
   div
-    div Who administered: {{ record.who }}
-    div Scheduled time: {{ record.period }}
-    div Actual time: {{ record.when }}
+    div Who administered: {{ record.whoAdministered }}
+    div Scheduled time: {{ record.scheduledTime }}
+    div Actual time: {{ record.actualTime }}
     med-list(:medsList="record.medications")
 </template>
 

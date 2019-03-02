@@ -2,40 +2,14 @@
   div(class="content")
     tabs
       tab(name="Today", :selected="true")
+      div
         mar-today-content(:periodDefs="periodDefs", :marHelper="marHelper")
 
       tab(name="Summary")
-        h1 Medication Administration Summary
-        div To be developed
-        div(v-for="record in marRecords.table")
-          mar-record(:record="record")
+        mar-summary(:marRecords="marRecords", :marHelper="marHelper")
 
         div(style="display:block") {{medicationOrders}}
         div(style="display:block") {{mars}}
-
-    app-dialog( v-if="showMarDialog", :isModal="true", @cancel="cancelDialog", @save="saveDialog")
-      h3(slot="header") Add MAR
-      div(slot="body")
-        div
-          div Period: {{activePeriod.name}}
-          div Medications:
-          div(class="medList", v-for="med in activePeriod.medsList")
-            div {{ medText(med) }}
-          div(class="input-fieldrow")
-            div(class="ehrdfe")
-              div(class="text_input_wrapper")
-                label Who administered
-                input(class="input", type="text", v-model="aMar.who")
-            div(class="ehrdfe")
-              div(class="text_input_wrapper")
-                label Actual time
-                input(class="input", type="text", v-model="aMar.when")
-          div(class="input-fieldrow")
-            div(class="ehrdfe")
-              label Comment
-              div(class="input-element input-element-full")
-                textarea(class="textarea",v-model="aMar.comment")
-
 </template>
 
 <script>
@@ -43,8 +17,8 @@ import EventBus from '../../helpers/event-bus'
 import AppDialog from '../../app/components/AppDialogShell'
 import UiButton from '../../app/ui/UiButton'
 import MedList from './mar/MedList'
-import MarRecord from './mar/MarRecord'
 import MarHelper from './mar/mar-util'
+import MarSummary from './mar/MarSummary'
 import MarTodayContent from './mar/MarTodayContent'
 import { PAGE_DATA_REFRESH_EVENT } from '../../helpers/event-bus'
 import Tabs from './Tabs'
@@ -56,8 +30,8 @@ export default {
     AppDialog,
     UiButton,
     MarTodayContent,
+    MarSummary,
     MedList,
-    MarRecord,
     Tabs,
     Tab
   },
@@ -68,6 +42,7 @@ export default {
       mars: {},
       aMar: {},
       activePeriod: {},
+      currentDay: 0,
       periodDefs: {},
       showMarDialog: false,
       marTableKey: '',
@@ -82,51 +57,18 @@ export default {
     medicationOrders () {
       // See EhrPageForm for more on why we have currentData
       this.refresh()
-      return this.theMedOrders
+      return this.marRecords
     },
   },
   methods: {
-
-    openMarDialog(period) {
-      this.activePeriod = period
-      this.showMarDialog = true
-    },
-    cancelDialog: function() {
-      this.showMarDialog = false
-    },
-    saveDialog: function() {
-      const _this = this
-      console.log('saveDialog ')
-      let asLoadedPageData = this.ehrHelp.getAsLoadedPageData(this.pageDataKey)
-      let table = asLoadedPageData[this.marTableKey] || []
-      let aMar = this.aMar
-      aMar.medications = []
-      aMar.period = this.activePeriod.key
-      _this.activePeriod.medsList.forEach( med => {
-        aMar.medications.push(_this.medRecord(med))
-      })
-      table.push(aMar)
-      let payload = {
-        propertyName: this.pageDataKey,
-        value: asLoadedPageData
-      }
-      this.ehrHelp._saveData(payload).then(() => {
-        _this.showMarDialog = false
-      })
-      this.ehrHelp.saveDialog()
-    },
-
     refresh () {
       if (this.marHelper) {
         let help = this.marHelper
-        this.marTableKey = help.getMarTableKey()
-        this.periodDefs = help.getSchedulePeriods()
-        console.log('refresh end ', this.periodDefs)
-        this.theMedOrders = help.getEhrData_Orders()
-        help.mergeOrdersSchedules(this.periodDefs, this.theMedOrders)
-        this.marRecords = help.getEhrData_Mars()
-        help.mergeMarAndSchedule(this.marRecords, this.periodDefs)
-        console.log('refresh end ', this.periodDefs)
+        help.refresh()
+        this.marTableKey = help.getMarTableKey
+        this.marRecords = help.marRecords
+        this.periodDefs = help.periodDefs
+        this.theMedOrders = help.getEhrData_Orders
       }
     }
   },

@@ -1,26 +1,21 @@
 <template lang="pug">
   div
     div(class="medList", v-for="med in medsList")
-      div {{ medText(med) }}
+      div {{ med.medication }}, {{ med.dose }}, {{ med.route }}, {{ med.notes }}
+      // div Reason: {{ med.reason }}
+      // div Details: {{ med.details }}
+      // div Schedule Type: {{ med.scheduleType }}
+      // div Schedule: {{ med.scheduleTime }}
+      // div Notes: {{ med.notes }}
 </template>
 
 <script>
 export default {
   name: 'MedList',
   props: {
-    medsList: { type: Array },
+    medsList: { type: Array }
   },
   methods: {
-    medText (med) {
-      let space = ', '
-      let extract = t => t && t.trim().length > 0 ? space + t : ''
-      let markup = med.medication
-      markup += extract(med.dose)
-      markup += extract(med.route)
-      markup += extract(med.type)
-      markup += extract(med.notes)
-      return markup
-    }
   }
 }
 </script>
