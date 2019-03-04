@@ -57,7 +57,7 @@ describe('MarEntity', () => {
     let obj = mar.data
     should.exist(obj)
     obj.should.have.property('scheduledTime')
-    obj.scheduledTime.should.be.equal(aPeriod)
+    obj.scheduledTime.should.be.equal(aPeriod.key)
   })
 
 

@@ -25,6 +25,7 @@ export default class MarEntity {
   constructor (whoOrObj, ...[day, when, comment, period]) {
     this._data = {}
     if (typeof whoOrObj ==='string') {
+      // console.log('MarEntity create from arguments')
       this.whoAdministered = whoOrObj
       this.day = day
       this.actualTime = when
@@ -33,9 +34,10 @@ export default class MarEntity {
         this.setPeriod(period)
       }
     } else if (typeof whoOrObj === 'object') {
+      // console.log('MarEntity create from object', whoOrObj)
       this.data = whoOrObj
     } else {
-      // default
+      // console.log('MarEntity create default')
       this.data = {
         whoAdministered: undefined,
         actualTime: undefined,
@@ -104,15 +106,16 @@ export default class MarEntity {
     if (!this._data.medications || this._data.medications.length == 0) {
       errMsgList.push(ERR_EMPTY_MEDS)
     }
-    console.log('MarEntity validation errors',  errMsgList)
+    // console.log('MarEntity validation errors',  errMsgList)
     return errMsgList
   }
 
-  static compare (a, b) {
+  static compare (a, b, inverse) {
     let d1 = validDayStr(a.day) ? 1 * a.day : 0
     let d2 = validDayStr(b.day) ? 1 * b.day : 0
     let diff = d1 - d2
-    return  diff !== 0 ? diff : MarEntity._compareTime(a.actualTime, b.actualTime)
+    let result =  diff !== 0 ? diff : MarEntity._compareTime(a.actualTime, b.actualTime)
+    return inverse ? -1 * result : result
   }
 
   static _compareTime ( t1, t2 ) {

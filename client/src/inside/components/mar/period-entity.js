@@ -41,8 +41,8 @@ export default class PeriodEntity {
   set medsList (list) { this._data.medsList = list }
   get medsList () { return this._data.medsList }
 
-  addMedication(med) { this._data.medsList.push(med)}
-  clearMedications() { this._data.medsList = []}
+  addMedication (med) { this._data.medsList.push(med)}
+  clearMedications () { this._data.medsList = []}
 
 }
 

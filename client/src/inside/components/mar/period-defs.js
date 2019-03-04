@@ -2,6 +2,7 @@ import { setApiError } from '../../../helpers/ehr-utills'
 import { getPageDefinition } from '../../../helpers/ehr-defs'
 import { SCHEDULE_FIELDSET, MED_ORDERS_PAGE_KEY } from './mar-util'
 import PeriodEntity from './period-entity'
+import MarEntity from './mar-entity'
 
 /**
  Compose the schedule periods (e.g. breakfast, lunch, etc) based on the data definitions.
@@ -29,21 +30,25 @@ export default class PeriodDefs {
     } else {
       setApiError(MED_ORDERS_PAGE_KEY + ' can not find table')
     }
+    this._currentDay = 0
     this._periodDefs = periodDefs
     this._periodKeys = periodKeys
   }
 
+  get currentDay () { return this._currentDay}
   get periodList () { return this._periodDefs}
-  get periodKeys() { return this._periodKeys }
+  get periodKeys () { return this._periodKeys }
 
-  clearMedications() {
+  periodIndex(key) { return this._periodKeys.indexOf(key)}
+
+  clearMedications () {
     this._periodKeys.forEach(pk => {
       this._periodDefs[pk].clearMedications()
     })
   }
 
 
-  validScheduledTime(value) {
+  validScheduledTime (value) {
     let result =  this._periodKeys.includes(value)
     // console.log('PeriodDefs validScheduledTime', value, result, this._periodKeys)
     return result
@@ -67,7 +72,7 @@ export default class PeriodDefs {
     medOrders.forEach(medOrder => {
       periodKeys.forEach(pk => {
         let period = periodDefs[pk]
-        console.log( pk, period, medOrder[pk])
+        //  console.log( pk, period, medOrder[pk])
         if (medOrder.isScheduled(pk)) {
           period.addMedication(medOrder)
         }
@@ -80,11 +85,51 @@ export default class PeriodDefs {
    * @param marRecords MarEntity[]
    */
   mergeMarAndSchedule (marRecords) {
+    // TODO can mergeMarAndSchedule be simplified?
+    // console.log('mergeMarAndSchedule', marRecords)
     let periodDefs = this._periodDefs
-    console.log('merge mar and schedule', marRecords)
+    let theDay = undefined
+    let dayPeriods = []
+    // sort oldest first
+    marRecords.sort( (a,b) => MarEntity.compare(a, b, false) )
+
+    // 1. find the "current day".  This is the day that has a period without a mar
+    // If a day has MARs for all periods then select the next day.
+    // 2 for the current day set up the period defs with the MAR records for the day and
+    // indicate which periods need a MAR
+    let maxDay = Number.MIN_VALUE
     marRecords.forEach(record => {
-      // record.period is the schedule 'key'
-      let periodKey = record.period
+      let recDay = record.day
+      maxDay = Math.max(recDay, maxDay)
+      let periodKey = this.periodIndex(record.scheduledTime)
+      // console.log('mergeMarAndSchedule record', record, recDay, periodKey)
+      if (!dayPeriods[recDay]) {
+        dayPeriods[recDay] = Array(this._periodKeys.length).fill(false)
+      }
+      dayPeriods[recDay][periodKey] = true
+    })
+    // console.log('mergeMarAndSchedule dayPeriods', dayPeriods)
+    let foundDay = -1
+    for(let i = 0; foundDay < 0 && i <= maxDay; i++) {
+      let flags = dayPeriods[i]
+      for(let k = 0; foundDay < 0  &&  k < flags.length; k++ ) {
+        if(flags[k] === false) {
+          foundDay = i
+        }
+      }
+    }
+    this._currentDay = foundDay
+    // console.log('mergeMarAndSchedule found that this day needs a mar record: ', foundDay)
+    let todaysMars = []
+    marRecords.forEach(record => {
+      if(record.day === foundDay) {
+        todaysMars.push(record)
+      }
+    })
+
+    todaysMars.forEach(record => {
+      let periodKey = record.scheduledTime
+      // console.log('mergeMarAndSchedule record', record.day, record.scheduledTime)
       Object.keys(periodDefs).forEach(pk => {
         let period = periodDefs[pk]
         let key = period.key

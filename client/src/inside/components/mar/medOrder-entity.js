@@ -42,9 +42,9 @@ export default class MedOrder {
 
 
   //TODO explain how this works ...
-  isScheduled(periodKey) {
+  isScheduled (periodKey) {
     let result = this._data[periodKey]
-    console.log('Is this med order scheduled for ', periodKey, '? ', result)
+    // console.log('Is this med order scheduled for ', periodKey, '? ', result)
     return result
   }
 

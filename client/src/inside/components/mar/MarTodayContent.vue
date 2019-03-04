@@ -38,10 +38,13 @@
           div(v-show="errorMesageList.length > 0", class="errorMesageList")
             li(v-for="error in errorMesageList") {{ error }}
 
+    div(style="display:none") {{refreshData}}
 
 </template>
 
 <script>
+import EventBus from '@/helpers/event-bus'
+import { PAGE_DATA_REFRESH_EVENT } from '../../../helpers/event-bus'
 import MedList from './MedList'
 import UiButton from '../../../app/ui/UiButton'
 import MarRecord from './MarRecord'
@@ -62,18 +65,26 @@ export default {
       when: '',
       comment: '',
       activePeriod: {},
-      currentDay: 0,
       errorMesageList: [],
-      showMarDialog: false
+      showMarDialog: false,
+      periodDefs: [],
+      currentDay: 0
     }
   },
   props: {
-    periodDefs: { type: Object },
     marHelper: { type: Object }
+  },
+  computed: {
+    refreshData () {
+      // See EhrPageForm for more on why we have currentData
+      console.log('MarTodayContent refreshData')
+      this.refresh()
+      return this.periodDefs
+    }
   },
   methods: {
     openMarDialog (period) {
-      this.aMar = {}
+      this.comment = this.when = this.who = ''
       this.activePeriod = period
       this.showMarDialog = true
     },
@@ -91,8 +102,30 @@ export default {
         .then(() => {
           _this.showMarDialog = false
         })
+    },
+    refresh () {
+      if (this.marHelper) {
+        // this.marHelper.marRefresh()
+        let pd = this.marHelper.periodDefinitions
+        this.periodDefs = pd.periodList
+        this.currentDay = pd.currentDay
+      }
+    }
+  },
+  mounted: function () {
+    const _this = this
+    this.refreshEventHandler = function () {
+      // console.log('MarTodayContent PAGE_DATA_REFRESH_EVENT')
+      _this.refresh()
+    }
+    EventBus.$on(PAGE_DATA_REFRESH_EVENT, this.refreshEventHandler)
+  },
+  beforeDestroy: function () {
+    if (this.refreshEventHandler) {
+      EventBus.$off(PAGE_DATA_REFRESH_EVENT, this.refreshEventHandler)
     }
   }
+
 }
 </script>
 

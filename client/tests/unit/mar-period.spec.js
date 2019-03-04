@@ -19,8 +19,8 @@ describe('PeriodDefs', () => {
     should.exist(periodKeys)
     // console.log(periodKeys)
 
-    obj.should.have.property('periodDefs')
-    let periodDefs = obj.periodDefs
+    obj.should.have.property('periodList')
+    let periodDefs = obj.periodList
     should.exist(periodDefs)
     // console.log(periodDefs)
     periodKeys.forEach( key => {
